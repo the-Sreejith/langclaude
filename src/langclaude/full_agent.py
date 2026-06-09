@@ -13,6 +13,7 @@ from langgraph.checkpoint.memory import InMemorySaver
 from langclaude import DEFAULT_MODEL
 from langclaude.part2_tools import run_tests
 from langclaude.part5_subagents import CODE_SEARCHER
+from langclaude.part6_safety import INTERRUPT_ON
 
 SYSTEM_PROMPT = """You are a careful coding assistant.
 Workflow:
@@ -44,6 +45,10 @@ def build_agent(
         tools=[run_tests],
         system_prompt=SYSTEM_PROMPT,
         subagents=[CODE_SEARCHER],
+        # Without this gate the assembled agent would run arbitrary shell
+        # commands and file edits with no approval — the exact failure mode
+        # Part 6 warns about.
+        interrupt_on=INTERRUPT_ON,
         checkpointer=checkpointer or InMemorySaver(),
     )
     if with_backend:

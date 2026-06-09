@@ -8,8 +8,10 @@ Two halves, both built in:
 * Compaction — the SummarizationMiddleware summarizes older turns when the
   window fills up.
 
-``inspect_middleware`` lets the tests confirm both middlewares are present on
-the assembled agent.
+Neither middleware appears as a graph node (they hook ``wrap_model_call``),
+so the tests verify them by walking the model node's closures — see
+``tests/conftest.py::installed_middleware`` — and by actually making
+compaction fire with a low trigger (``tests/test_part4_context.py``).
 """
 
 from __future__ import annotations
@@ -28,8 +30,3 @@ def build_agent(model: str | BaseChatModel = DEFAULT_MODEL):
         tools=[],
         system_prompt="You are a coding assistant. Offload large results to files.",
     )
-
-
-def middleware_names(agent) -> list[str]:
-    """Return the class names of the graph nodes (middleware hooks show up here)."""
-    return list(agent.get_graph().nodes.keys())

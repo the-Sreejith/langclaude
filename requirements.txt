@@ -12,3 +12,4 @@ anthropic==0.108.0
 
 # Test/dev
 pytest==9.0.3
+ruff==0.15.16

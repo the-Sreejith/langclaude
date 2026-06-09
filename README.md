@@ -12,7 +12,9 @@ with a deterministic scripted model.
 
 > **TL;DR of the verification:** the post's concepts are all correct. Two
 > snippets need a small fix to run on `deepagents 0.6.8` (subagent key
-> `prompt` → `system_prompt`; `LocalShellBackend` is *not* a sandbox). Full
+> `prompt` → `system_prompt`; `LocalShellBackend` is *not* a sandbox). A
+> second-revision code review then fixed the repo's own gaps — most notably,
+> the capstone agent claimed a human-approval gate it never wired up. Full
 > details in [`docs/FINDINGS.md`](docs/FINDINGS.md).
 
 ## The mental model
@@ -35,21 +37,22 @@ The loop exits the moment the model replies with plain text instead of a tool
 call. Everything else (planning, subagents, compaction, the permission/sandbox
 layer) wraps this loop without changing it.
 
-## The seven parts
+## The eight parts
 
 Each part of the post is a small module under `src/langclaude/`, and each has a
 test proving it works.
 
 | Part | Concept | Module | Proven by |
 | --- | --- | --- | --- |
+| 0 | The loop from scratch | `part0_scratch_loop.py` | the bare loop runs against a scripted raw-API client, plus the `max_turns` backstop |
 | 1 | The loop | `part1_loop.py` | model → tool → result → exit fires end-to-end |
-| 2 | Tools (the hands) | `part2_tools.py` | all 10 built-ins present + custom `run_tests` merged |
+| 2 | Tools (the hands) | `part2_tools.py` | all 9 built-ins present + custom `run_tests` merged; tool output is token-budgeted |
 | 3 | Planning | `part3_planning.py` | `write_todos` writes the plan into state |
-| 4 | Context management | `part4_context.py` | filesystem + summarization middleware installed |
-| 5 | Subagents | `part5_subagents.py` | `task` delegates and the helper's own loop reports back |
-| 6 | Safety / human-in-the-loop | `part6_safety.py` | loop **pauses for approval** before `execute` |
+| 4 | Context management | `part4_context.py` | both middlewares wired into the agent **and compaction actually fires** (summary replaces old turns, history offloaded to a file) |
+| 5 | Subagents | `part5_subagents.py` | `task` delegates and reports back; wrong `prompt` key raises; subagents **cannot** spawn subagents |
+| 6 | Safety / human-in-the-loop | `part6_safety.py` | loop **pauses for approval**; **approve** really runs the command, **reject** really blocks it; `LocalShellBackend` proven to escape `root_dir` |
 | 7 | Persistence | `part7_persistence.py` | state survives across turns on one `thread_id` |
-| ∑ | All together | `full_agent.py` | every capability wired into one agent |
+| ∑ | All together | `full_agent.py` | every capability wired into one agent, **including the approval gate** |
 
 ## Quickstart
 
@@ -62,7 +65,10 @@ pip install -e .
 
 # 2. Run the full test suite — NO API key required
 pytest
-#   16 passed, 2 skipped   (the 2 skipped are the live API tests)
+#   25 passed, 2 skipped   (the 2 skipped are the live API tests)
+
+# Lint (same check CI runs)
+ruff check src tests
 ```
 
 ### Run the live demo (optional, costs tokens)
@@ -107,9 +113,11 @@ model in tests or swap providers.
 langclaude/
 ├── README.md
 ├── requirements.txt          # pinned, verified versions
-├── pyproject.toml            # package + pytest config
+├── pyproject.toml            # package + pytest + ruff config
 ├── .env.example
+├── .github/workflows/ci.yml  # lint + tests on every push
 ├── src/langclaude/           # one module per part of the post
+│   ├── part0_scratch_loop.py   # the loop by hand — raw API, no framework
 │   ├── part1_loop.py … part7_persistence.py
 │   └── full_agent.py
 ├── examples/run_full_agent.py  # live demo (needs API key)

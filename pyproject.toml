@@ -21,3 +21,10 @@ markers = [
     "live: tests that call the real Anthropic API (skipped without ANTHROPIC_API_KEY)",
 ]
 addopts = "-v"
+
+[tool.ruff]
+line-length = 100
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]

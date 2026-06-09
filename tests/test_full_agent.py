@@ -4,21 +4,40 @@ from __future__ import annotations
 
 from langchain_core.messages import AIMessage
 
-from conftest import requires_api_key, scripted_model
+from conftest import requires_api_key, scripted_model, tool_names
 from langclaude.full_agent import build_agent
-
-
-def _tool_names(agent) -> set[str]:
-    node = agent.nodes["tools"]
-    bound = getattr(node, "bound", node)
-    return set(getattr(bound, "tools_by_name", {}).keys())
 
 
 def test_full_agent_has_every_capability_wired():
     agent = build_agent(scripted_model([AIMessage(content="ok")]))
-    names = _tool_names(agent)
+    names = tool_names(agent)
     # planning, files, shell, delegation, and the custom tool are all present
     assert {"write_todos", "read_file", "execute", "task", "run_tests"} <= names
+
+
+def test_full_agent_gates_execute_behind_approval():
+    # Regression guard for the original capstone bug: the assembled agent
+    # claimed a human-approval gate but never passed interrupt_on, so it would
+    # run arbitrary shell commands unprompted. Prove the gate actually fires.
+    model = scripted_model(
+        [
+            AIMessage(
+                content="",
+                tool_calls=[
+                    {"name": "execute", "args": {"command": "rm -rf /"}, "id": "x1"}
+                ],
+            ),
+            AIMessage(content="never reached without approval"),
+        ]
+    )
+    agent = build_agent(model)
+    result = agent.invoke(
+        {"messages": [{"role": "user", "content": "clean everything up"}]},
+        {"configurable": {"thread_id": "full-gate"}},
+    )
+    assert "__interrupt__" in result
+    actions = [a["name"] for a in result["__interrupt__"][0].value["action_requests"]]
+    assert "execute" in actions
 
 
 def test_full_agent_loop_runs_through_planning():

@@ -3,6 +3,7 @@
 
 Each module maps to one part of the post:
 
+    part0_scratch_loop  The loop by hand — raw Messages API, no framework
     part1_loop          The agent loop (the engine)
     part2_tools         Custom tools (the hands)
     part3_planning      write_todos planning
