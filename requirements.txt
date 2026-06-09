@@ -1,0 +1,14 @@
+# Verified working set (pinned to the versions this repo was validated against).
+# See docs/FINDINGS.md for notes on API differences vs. the original blog post.
+deepagents==0.6.8
+langchain-anthropic==1.4.4
+
+# Transitive pins that matter for reproducibility of the verification runs:
+langchain==1.3.4
+langchain-core==1.4.2
+langgraph==1.2.4
+langgraph-checkpoint==4.1.1
+anthropic==0.108.0
+
+# Test/dev
+pytest==9.0.3

@@ -1,0 +1,23 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "langclaude"
+version = "0.1.0"
+description = "Build Your Own Claude Code with LangChain Deep Agents — verified, runnable companion to the blog post."
+requires-python = ">=3.10"
+dependencies = [
+    "deepagents==0.6.8",
+    "langchain-anthropic==1.4.4",
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+markers = [
+    "live: tests that call the real Anthropic API (skipped without ANTHROPIC_API_KEY)",
+]
+addopts = "-v"
